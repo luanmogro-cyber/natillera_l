@@ -1,0 +1,7 @@
+/backend/vendor/
+/backend/storage/*.sqlite
+/backend/storage/*.sqlite-shm
+/backend/storage/*.sqlite-wal
+/backend/.env
+/frontend/public/uploads/prestamos/*
+!/frontend/public/uploads/prestamos/.gitkeep

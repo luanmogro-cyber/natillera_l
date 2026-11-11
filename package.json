@@ -1,0 +1,10 @@
+{
+  "name": "natillera-la-semilla",
+  "version": "1.0.0",
+  "description": "Natillera comunitaria La Semilla — servidor de desarrollo local",
+  "scripts": {
+    "dev": "\"C:\\laragon\\bin\\php\\php-8.3.30-Win32-vs16-x64\\php.exe\" -S 127.0.0.1:8765 -t frontend/public frontend/public/index.php",
+    "start": "npm run dev"
+  },
+  "private": true
+}

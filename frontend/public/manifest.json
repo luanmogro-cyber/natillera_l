@@ -1,0 +1,21 @@
+{
+  "name": "La Semilla — Natillera",
+  "short_name": "La Semilla",
+  "description": "Natillera comunitaria. Administra aportes, reuniones y socios.",
+  "start_url": "/panel",
+  "display": "standalone",
+  "background_color": "#f8f6ef",
+  "theme_color": "#183d31",
+  "icons": [
+    {
+      "src": "/img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

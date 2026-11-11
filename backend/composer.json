@@ -1,0 +1,18 @@
+{
+  "name": "natillera/comunitaria",
+  "description": "Aplicación local para la gestión de una natillera comunitaria.",
+  "type": "project",
+  "require": {
+    "php": ">=8.0",
+    "minishlink/web-push": "^8.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Natillera\\App\\": "app/",
+      "Natillera\\Core\\": "core/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

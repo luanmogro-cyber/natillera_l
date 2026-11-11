@@ -1,0 +1,11 @@
+.git
+.gitignore
+backend/.env
+backend/vendor
+database
+frontend/public/uploads/prestamos/*.png
+frontend/public/uploads/prestamos/*.jpg
+frontend/public/uploads/prestamos/*.jpeg
+frontend/public/uploads/prestamos/*.webp
+README.md
+
