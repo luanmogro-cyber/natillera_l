@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-// ─── Cargar variables de entorno desde .env ──────────────────────────────────
+// ─── Cargar variables de entorno desde .env local si existe ─────────────────
 $envPath = __DIR__ . '/../.env';
 if (is_file($envPath)) {
     foreach (file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
@@ -21,12 +21,12 @@ if (is_file($envPath)) {
     }
 }
 
-// ─── Credenciales MySQL (soporta .env local, Railway MYSQL_URL/MYSQL* y Render) ──
+// ─── Función auxiliar para resolver variables de entorno en cualquier plataforma ──
 $firstEnv = static function (array $keys, ?string $default = null): ?string {
     foreach ($keys as $key) {
         $val = getenv($key);
         if ($val !== false && $val !== '') {
-            return $val;
+            return (string) $val;
         }
         if (isset($_ENV[$key]) && $_ENV[$key] !== '') {
             return (string) $_ENV[$key];
@@ -38,34 +38,42 @@ $firstEnv = static function (array $keys, ?string $default = null): ?string {
     return $default;
 };
 
-$dbUrl = $firstEnv(['MYSQL_URL', 'MYSQL_PUBLIC_URL', 'DATABASE_URL']);
+// ─── Detección de conexión: URL completa (Railway / Render) o variables individuales ─
+$dbUrl = $firstEnv(['MYSQL_URL', 'MYSQL_PRIVATE_URL', 'MYSQL_PUBLIC_URL', 'DATABASE_URL']);
+
 if ($dbUrl !== null && str_starts_with($dbUrl, 'mysql')) {
-    $parts     = parse_url($dbUrl) ?: [];
-    $dbHost    = $parts['host'] ?? '127.0.0.1';
-    $dbPort    = isset($parts['port']) ? (string) $parts['port'] : '3306';
-    $dbName    = ltrim((string) ($parts['path'] ?? '/natillera_l'), '/');
-    $dbUser    = isset($parts['user']) ? urldecode($parts['user']) : 'root';
-    $dbPass    = isset($parts['pass']) ? urldecode($parts['pass']) : '';
+    $parts    = parse_url($dbUrl) ?: [];
+    $dbHost   = $parts['host'] ?? '127.0.0.1';
+    $dbPort   = isset($parts['port']) ? (string) $parts['port'] : '3306';
+    $dbName   = ltrim((string) ($parts['path'] ?? '/natillera_l'), '/');
+    $dbUser   = isset($parts['user']) ? urldecode($parts['user']) : 'root';
+    $dbPass   = isset($parts['pass']) ? urldecode($parts['pass']) : '';
 } else {
-    $dbHost = $firstEnv(['DB_HOST', 'MYSQLHOST'], '127.0.0.1');
-    $dbPort = $firstEnv(['DB_PORT', 'MYSQLPORT'], '3306');
-    $dbName = $firstEnv(['DB_NAME', 'MYSQLDATABASE'], 'natillera_l');
-    $dbUser = $firstEnv(['DB_USER', 'MYSQLUSER'], 'root');
-    $dbPass = $firstEnv(['DB_PASS', 'MYSQLPASSWORD']);
-    if ($dbPass === null) {
-        $dbPass = 'root';
-    }
+    $dbHost = $firstEnv(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST'], '127.0.0.1');
+    $dbPort = $firstEnv(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT'], '3306');
+    $dbName = $firstEnv(['MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME'], 'railway');
+    $dbUser = $firstEnv(['MYSQLUSER', 'MYSQL_USER', 'DB_USER'], 'root');
+    $dbPass = $firstEnv(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'DB_PASS', 'DB_PASSWORD'], '');
 }
+
 $dbCharset = $firstEnv(['DB_CHARSET'], 'utf8mb4');
 
 $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset={$dbCharset}";
 
-$db = new PDO($dsn, $dbUser, $dbPass, [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
-    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES {$dbCharset} COLLATE utf8mb4_unicode_ci",
-]);
+try {
+    $db = new PDO($dsn, $dbUser, $dbPass, [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES {$dbCharset} COLLATE utf8mb4_unicode_ci",
+    ]);
+} catch (PDOException $e) {
+    throw new PDOException(
+        "Error al conectar con la base de datos en [{$dbHost}:{$dbPort} / {$dbName}]. " .
+        "Verifica que el servicio MySQL en Railway este creado y vinculado. Detalle: " . $e->getMessage(),
+        (int) $e->getCode()
+    );
+}
 
 // ─── Crear tablas si no existen ───────────────────────────────────────────────
 $db->exec("
@@ -263,9 +271,5 @@ CREATE TABLE IF NOT EXISTS recordatorios_enviados (
     CONSTRAINT fk_rec_reunion FOREIGN KEY (reunion_id) REFERENCES reuniones(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ");
-
-// ─── Crear presidente inicial si no existe ningún usuario ────────────────────
-// (solo para instalaciones nuevas; si ya hay datos, no hace nada)
-// Esta lógica se maneja desde AuthController::guardarInstalacion()
 
 return $db;
