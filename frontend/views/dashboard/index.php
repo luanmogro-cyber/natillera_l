@@ -70,7 +70,7 @@
                     <p>Estado consolidado en tiempo real. <strong>Haz clic en cualquier tarjeta para ver el listado detallado.</strong></p>
                 </div>
             </div>
-            <div class="row g-3">
+            <div class="row g-2 g-md-3">
                 <div class="col-6 col-md-4 col-lg-2">
                     <div class="p-3 rounded border bg-light h-100 balance-card-clickable"
                          role="button"

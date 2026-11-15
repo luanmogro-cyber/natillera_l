@@ -19,6 +19,12 @@
     box-sizing: border-box;
 }
 
+html,
+body {
+    max-width: 100vw;
+    overflow-x: clip;
+}
+
 body {
     min-width: 320px;
     min-height: 100vh;
@@ -2294,6 +2300,141 @@ textarea.form-control {
 
     .auth-footnote {
         margin-top: 1.1rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       AJUSTES DE RESPONSIVIDAD PARA CELULARES Y PANTALLAS PEQUEÑAS
+       ═══════════════════════════════════════════════════════════════════ */
+    .sidebar-nav {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .module-tip {
+        display: none !important;
+    }
+
+    .topbar {
+        min-height: 3.2rem;
+        padding: .4rem .75rem;
+    }
+
+    .topbar-account {
+        gap: .4rem;
+    }
+
+    .btn-view-toggle {
+        padding: .25rem .5rem;
+        font-size: .65rem;
+    }
+
+    .settlement-toolbar {
+        grid-template-columns: 1fr !important;
+        gap: .65rem;
+        padding: .75rem;
+    }
+
+    .settlement-total {
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid #ddded2;
+        padding-top: .5rem;
+    }
+
+    .participant-checklist {
+        grid-template-columns: 1fr !important;
+        max-height: 230px;
+    }
+
+    .activity-totals {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .25rem;
+    }
+
+    .activity-totals > div {
+        padding: .5rem .4rem;
+    }
+
+    .activity-totals strong {
+        font-size: .78rem;
+    }
+
+    .loan-numbers {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .4rem;
+    }
+
+    .balance-card-clickable {
+        padding: .65rem .6rem !important;
+    }
+
+    .balance-card-clickable small {
+        font-size: .68rem !important;
+    }
+
+    .balance-card-clickable strong {
+        font-size: .88rem !important;
+    }
+
+    .balance-card-hint {
+        font-size: .6rem !important;
+    }
+
+    #socioTabs {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: .35rem;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #socioTabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    #socioTabs .nav-item {
+        flex: 0 0 auto;
+    }
+
+    #socioTabs .nav-link {
+        white-space: nowrap;
+        font-size: .78rem;
+        padding: .35rem .75rem;
+    }
+
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: .5rem;
+        border-radius: .6rem;
+    }
+
+    .modal-dialog {
+        margin: .5rem auto;
+        max-width: calc(100vw - 1rem) !important;
+    }
+
+    .modal-content {
+        border-radius: 1rem;
+    }
+
+    .modal-header,
+    .modal-footer {
+        padding: .6rem .85rem;
+    }
+
+    .modal-body {
+        padding: .75rem !important;
+    }
+
+    .modal-title {
+        font-size: 1.05rem !important;
+    }
+
+    /* Prevenir zoom no deseado en campos de texto en iPhone / Safari móvil */
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        font-size: 16px !important;
     }
 }
 
