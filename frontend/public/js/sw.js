@@ -1,7 +1,7 @@
 "use strict";
 
 // ─── Versión del caché ───────────────────────────────────────────────────────
-const CACHE_VERSION = "natillera-v4";
+const CACHE_VERSION = "natillera-v6";
 const STATIC_CACHE  = CACHE_VERSION + "-static";
 const PAGES_CACHE   = CACHE_VERSION + "-pages";
 const SYNC_QUEUE    = "natillera-sync-queue";

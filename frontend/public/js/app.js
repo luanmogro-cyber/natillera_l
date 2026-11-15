@@ -304,10 +304,14 @@
     const loanMontoInput = document.querySelector("#monto");
     const loanCupoInfo = document.querySelector("#cupo-info");
     const loanCupoError = document.querySelector("#cupo-error");
+    const loanCajaError = document.querySelector("#caja-error");
     const loanSubmitBtn = document.querySelector("#btn-submit-prestamo");
+    const cajaBadge = document.querySelector("#caja-disponible-badge");
 
     if (loanForm && loanSocioSelect && loanMontoInput) {
         const formatCop = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
+        const cajaDisponible = cajaBadge ? Number(cajaBadge.dataset.disponible || 0) : Infinity;
+
         // Si la opción actual está deshabilitada, seleccionar la primera disponible
         if (loanSocioSelect.selectedOptions[0]?.disabled) {
             const firstEnabled = [...loanSocioSelect.options].find((opt) => !opt.disabled);
@@ -327,8 +331,9 @@
                     : `<strong class="text-danger">Este socio no tiene cupo disponible.</strong>`;
             }
 
-            const excede = monto > disponible || disponible <= 0;
-            if (excede && (monto > 0 || disponible <= 0)) {
+            // 1. Validar cupo individual del socio
+            const excedeCupo = monto > disponible || disponible <= 0;
+            if (excedeCupo && (monto > 0 || disponible <= 0)) {
                 loanMontoInput.classList.add("is-invalid");
                 if (loanCupoError) {
                     loanCupoError.textContent = disponible <= 0
@@ -336,12 +341,26 @@
                         : `⚠️ El monto ingresado ($${formatCop.format(monto)}) supera el cupo disponible ($${formatCop.format(disponible)}). Reduce el valor para poder continuar.`;
                     loanCupoError.classList.remove("d-none");
                 }
+                if (loanCajaError) loanCajaError.classList.add("d-none");
+                if (loanSubmitBtn) loanSubmitBtn.disabled = true;
+                return false;
+            }
+
+            // 2. Validar fondos disponibles en la caja de la natillera
+            if (monto > cajaDisponible) {
+                loanMontoInput.classList.add("is-invalid");
+                if (loanCajaError) {
+                    loanCajaError.innerHTML = `⚠️ <strong>Fondos insuficientes en la natillera:</strong> La caja disponible actual es de $${formatCop.format(cajaDisponible)} y estás solicitando $${formatCop.format(monto)}. No es posible prestar más dinero del disponible en caja.`;
+                    loanCajaError.classList.remove("d-none");
+                }
+                if (loanCupoError) loanCupoError.classList.add("d-none");
                 if (loanSubmitBtn) loanSubmitBtn.disabled = true;
                 return false;
             }
 
             loanMontoInput.classList.remove("is-invalid");
             if (loanCupoError) loanCupoError.classList.add("d-none");
+            if (loanCajaError) loanCajaError.classList.add("d-none");
             if (loanSubmitBtn) loanSubmitBtn.disabled = false;
             return true;
         };
@@ -389,4 +408,178 @@
             }
         });
     });
+
+    // ── 14. Búsqueda en tiempo real de participantes en Actividades ───────────
+    const searchInput = document.querySelector("#buscar-participante");
+    const checklist = document.querySelector("#participant-checklist");
+    if (searchInput && checklist) {
+        const clearBtn = document.querySelector("#btn-limpiar-busqueda-participante");
+        const countSelectedEl = document.querySelector("#contador-participantes-seleccionados");
+        const filterStatusEl = document.querySelector("#contador-filtro-participantes");
+        const emptyMsgEl = document.querySelector("#sin-participantes-filtro");
+        const btnMarcarVisibles = document.querySelector("#btn-marcar-visibles");
+        const btnDesmarcarTodos = document.querySelector("#btn-desmarcar-todos");
+
+        const options = Array.from(checklist.querySelectorAll(".participant-option"));
+        const checkboxes = options.map((opt) => opt.querySelector("input[type='checkbox']")).filter(Boolean);
+
+        const normalizeStr = (text) =>
+            (text || "")
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .trim();
+
+        const updateSelectedCount = () => {
+            const count = checkboxes.filter((cb) => cb.checked).length;
+            if (countSelectedEl) {
+                countSelectedEl.textContent = count === 1 ? "1 seleccionado" : `${count} seleccionados`;
+                countSelectedEl.className = count > 0 ? "badge bg-success" : "badge bg-light text-dark border";
+            }
+        };
+
+        const filterParticipants = () => {
+            const query = normalizeStr(searchInput.value);
+            let visibleCount = 0;
+
+            if (clearBtn) {
+                clearBtn.classList.toggle("d-none", query === "");
+            }
+
+            options.forEach((opt) => {
+                const nombre = opt.dataset.nombre || normalizeStr(opt.textContent);
+                const numero = opt.dataset.numero || "";
+                const normName = normalizeStr(nombre);
+                const matches = query === "" || normName.includes(query) || (numero !== "" && numero.includes(query));
+
+                if (matches) {
+                    opt.classList.remove("d-none");
+                    visibleCount++;
+                } else {
+                    opt.classList.add("d-none");
+                }
+            });
+
+            if (emptyMsgEl) {
+                emptyMsgEl.classList.toggle("d-none", visibleCount > 0);
+            }
+
+            if (filterStatusEl) {
+                if (query === "") {
+                    filterStatusEl.textContent = `Mostrando todos (${options.length})`;
+                } else {
+                    filterStatusEl.textContent = `${visibleCount} de ${options.length} encontrados`;
+                }
+            }
+        };
+
+        searchInput.addEventListener("input", filterParticipants);
+        searchInput.addEventListener("search", filterParticipants);
+        searchInput.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                searchInput.value = "";
+                filterParticipants();
+            }
+        });
+
+        if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+                searchInput.value = "";
+                filterParticipants();
+                searchInput.focus();
+            });
+        }
+
+        checkboxes.forEach((cb) => {
+            cb.addEventListener("change", updateSelectedCount);
+        });
+
+        if (btnMarcarVisibles) {
+            btnMarcarVisibles.addEventListener("click", () => {
+                options.forEach((opt) => {
+                    if (!opt.classList.contains("d-none")) {
+                        const cb = opt.querySelector("input[type='checkbox']");
+                        if (cb) cb.checked = true;
+                    }
+                });
+                updateSelectedCount();
+            });
+        }
+
+        if (btnDesmarcarTodos) {
+            btnDesmarcarTodos.addEventListener("click", () => {
+                checkboxes.forEach((cb) => {
+                    cb.checked = false;
+                });
+                updateSelectedCount();
+            });
+        }
+
+        // Estado inicial
+        updateSelectedCount();
+        filterParticipants();
+    }
+
+    // ── 15. Bloqueo de horas pasadas en programación de reuniones ─────────────
+    const meetingForm = document.querySelector("#meeting-form");
+    const meetingFecha = document.querySelector("#fecha");
+    const meetingHora = document.querySelector("#hora");
+    const meetingAlert = document.querySelector("#hora-invalida-alerta");
+    const meetingSubmitBtn = document.querySelector("#btn-programar-reunion");
+
+    if (meetingForm && meetingFecha && meetingHora) {
+        const getNowStr = () => {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, "0");
+            const d = String(now.getDate()).padStart(2, "0");
+            const hh = String(now.getHours()).padStart(2, "0");
+            const mm = String(now.getMinutes()).padStart(2, "0");
+            return {
+                today: `${y}-${m}-${d}`,
+                currentTime: `${hh}:${mm}`,
+            };
+        };
+
+        const validateMeetingDateTime = () => {
+            const { today, currentTime } = getNowStr();
+            const selectedFecha = meetingFecha.value;
+            const selectedHora = meetingHora.value;
+
+            // Si la fecha es hoy, la hora no puede ser menor o igual a la hora actual
+            if (selectedFecha === today) {
+                meetingHora.min = currentTime;
+
+                if (selectedHora && selectedHora <= currentTime) {
+                    meetingHora.classList.add("is-invalid");
+                    if (meetingAlert) {
+                        meetingAlert.innerHTML = `⚠️ <strong>Hora no permitida:</strong> No puedes programar una reunión en una hora que ya pasó el día de hoy (hora actual: <strong>${currentTime}</strong> y seleccionaste <strong>${selectedHora}</strong>). Por favor elige una hora futura para hoy o selecciona una fecha posterior.`;
+                        meetingAlert.classList.remove("d-none");
+                    }
+                    if (meetingSubmitBtn) meetingSubmitBtn.disabled = true;
+                    return false;
+                }
+            } else {
+                meetingHora.removeAttribute("min");
+            }
+
+            meetingHora.classList.remove("is-invalid");
+            if (meetingAlert) meetingAlert.classList.add("d-none");
+            if (meetingSubmitBtn) meetingSubmitBtn.disabled = false;
+            return true;
+        };
+
+        meetingFecha.addEventListener("change", validateMeetingDateTime);
+        meetingHora.addEventListener("input", validateMeetingDateTime);
+        meetingHora.addEventListener("change", validateMeetingDateTime);
+
+        meetingForm.addEventListener("submit", (e) => {
+            if (!validateMeetingDateTime()) {
+                e.preventDefault();
+                meetingHora.focus();
+            }
+        });
+
+        validateMeetingDateTime();
+    }
 })();

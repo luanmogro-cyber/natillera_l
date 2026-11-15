@@ -19,11 +19,11 @@ final class Actividad extends Model
         )->fetchAll();
 
         $participantesStatement = $this->db->prepare(
-            'SELECT socios.id, socios.nombre_completo
+            'SELECT socios.id, socios.numero, socios.nombre_completo
              FROM actividad_participantes
              INNER JOIN socios ON socios.id = actividad_participantes.socio_id
              WHERE actividad_participantes.actividad_id = :actividad_id
-             ORDER BY socios.nombre_completo, socios.id'
+             ORDER BY socios.numero IS NULL, socios.numero ASC, socios.nombre_completo ASC, socios.id ASC'
         );
         foreach ($actividades as &$actividad) {
             $actividad['neto'] = (int) $actividad['ingresos'] - (int) $actividad['gastos'];
@@ -47,10 +47,10 @@ final class Actividad extends Model
     public function participantes(): array
     {
         return $this->db->query(
-            'SELECT socios.id, socios.nombre_completo
+            'SELECT socios.id, socios.numero, socios.nombre_completo
              FROM socios
              WHERE socios.activo = 1
-             ORDER BY socios.nombre_completo, socios.id'
+             ORDER BY socios.numero IS NULL, socios.numero ASC, socios.nombre_completo ASC, socios.id ASC'
         )->fetchAll();
     }
 

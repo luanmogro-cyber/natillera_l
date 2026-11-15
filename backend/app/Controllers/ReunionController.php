@@ -45,6 +45,9 @@ final class ReunionController extends Controller
         $fechaValida = \DateTimeImmutable::createFromFormat('!Y-m-d', $fecha);
         $horaValida = \DateTimeImmutable::createFromFormat('!H:i', $hora);
 
+        $ahora = new \DateTimeImmutable('now', new \DateTimeZone('America/Bogota'));
+        $dtReunion = \DateTimeImmutable::createFromFormat('!Y-m-d H:i', $fecha . ' ' . $hora, new \DateTimeZone('America/Bogota'));
+
         if (
             $fechaValida === false || $fechaValida->format('Y-m-d') !== $fecha
             || $horaValida === false || $horaValida->format('H:i') !== $hora
@@ -52,6 +55,11 @@ final class ReunionController extends Controller
             || !in_array($concepto, ['Cuota regular', 'Cuota + Rifa', 'Cuota + Ronda'], true)
         ) {
             $this->flash('danger', 'Verifica la fecha, hora, concepto y valor de la cuota.');
+            $this->redirect('/admin/reuniones');
+        }
+
+        if ($dtReunion === false || $dtReunion <= $ahora) {
+            $this->flash('danger', 'No puedes programar una reunión en una hora o fecha que ya pasaron. Por favor selecciona una hora posterior a la actual.');
             $this->redirect('/admin/reuniones');
         }
 

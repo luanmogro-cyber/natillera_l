@@ -51,6 +51,20 @@
             <?php if ($socios === []): ?>
                 <div class="empty-state"><p>Agrega socios antes de registrar un préstamo.</p></div>
             <?php else: ?>
+                <!-- RESUMEN DE LIQUIDEZ Y FONDO DISPONIBLE -->
+                <div class="alert <?= ($cajaDisponible ?? 0) > 0 ? 'alert-success' : 'alert-danger' ?> py-2 px-3 d-flex justify-content-between align-items-center mb-3 border">
+                    <div>
+                        <strong class="d-block" style="font-size: 0.85rem;">💵 Caja disponible en la natillera</strong>
+                        <small class="text-muted" style="font-size: 0.72rem;">Fondos líquidos para nuevos préstamos</small>
+                    </div>
+                    <div class="text-end">
+                        <strong class="fs-6 <?= ($cajaDisponible ?? 0) > 0 ? 'text-success' : 'text-danger' ?>" id="caja-disponible-badge" data-disponible="<?= (int) ($cajaDisponible ?? 0) ?>">
+                            $<?= number_format((int) ($cajaDisponible ?? 0), 0, ',', '.') ?>
+                        </strong>
+                        <small class="d-block text-muted" style="font-size:0.68rem;">COP</small>
+                    </div>
+                </div>
+
                 <form method="post" action="/admin/prestamos" enctype="multipart/form-data" class="form-stack" id="form-nuevo-prestamo">
                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                     
@@ -82,6 +96,7 @@
                         <input class="form-control js-format-miles" id="monto" name="monto" type="text" inputmode="numeric" placeholder="Ej. 1.000.000" required>
                     </div>
                     <div id="cupo-error" class="alert alert-danger py-2 px-3 small mt-2 mb-1 d-none" role="alert"></div>
+                    <div id="caja-error" class="alert alert-danger py-2 px-3 small mt-2 mb-1 d-none" role="alert"></div>
 
                     <div class="row g-2">
                         <div class="col-6">

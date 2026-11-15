@@ -23,9 +23,12 @@
             <form method="post" action="/admin/reuniones" class="form-stack" id="meeting-form">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <label class="field-label" for="fecha">Fecha</label>
-                <input class="form-control" id="fecha" name="fecha" type="date" min="<?= date('Y-m-d') ?>" required>
+                <input class="form-control" id="fecha" name="fecha" type="date" min="<?= date('Y-m-d') ?>" value="<?= date('Y-m-d') ?>" required>
                 <label class="field-label" for="hora">Hora de encuentro</label>
                 <input class="form-control" id="hora" name="hora" type="time" value="18:00" required>
+                <div id="hora-invalida-alerta" class="alert alert-danger d-none mt-2 p-2 small" role="alert" style="border-left: 4px solid #dc3545;">
+                    ⚠️ <strong>Hora no permitida:</strong> No puedes programar una reunión en una hora que ya pasó el día de hoy. Por favor selecciona una hora posterior a la actual.
+                </div>
                 <label class="field-label" for="concepto">Tipo de quincena</label>
                 <select class="form-select" id="concepto" name="concepto" required>
                     <option value="Cuota regular" data-valor="55000">Cuota regular</option>
@@ -37,7 +40,7 @@
                     <strong><span id="meeting-amount">$55.000</span> <small>COP</small></strong>
                 </div>
                 <input type="hidden" name="valor_cuota" id="valor_cuota" value="55000">
-                <button class="btn btn-primary" type="submit">Programar reunión <span aria-hidden="true">→</span></button>
+                <button class="btn btn-primary" type="submit" id="btn-programar-reunion">Programar reunión <span aria-hidden="true">→</span></button>
             </form>
         </article>
 

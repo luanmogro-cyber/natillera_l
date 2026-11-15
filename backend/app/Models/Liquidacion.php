@@ -65,6 +65,105 @@ final class Liquidacion extends Model
         ];
     }
 
+    public function balanceDetalles(): array
+    {
+        // 1. Detalle de intereses y mora recaudados
+        $interesesPagos = $this->db->query(
+            'SELECT pp.id, pp.fecha_pago, pp.abono_interes, pp.abono_mora, pp.total_pagado, pp.observacion,
+                    s.id AS socio_id, s.numero AS socio_numero, s.nombre_completo AS socio_nombre,
+                    p.id AS prestamo_id, p.monto AS prestamo_monto
+             FROM prestamo_pagos pp
+             INNER JOIN prestamos p ON p.id = pp.prestamo_id
+             INNER JOIN socios s ON s.id = p.socio_id
+             WHERE (pp.abono_interes > 0 OR pp.abono_mora > 0)
+             ORDER BY pp.fecha_pago DESC, pp.id DESC'
+        )->fetchAll();
+
+        $interesesLegacy = $this->db->query(
+            'SELECT p.id, COALESCE(p.fecha_liquidacion, p.fecha_entrega) AS fecha_pago,
+                    p.interes_recibido AS abono_interes, p.mora_recibida AS abono_mora,
+                    (p.interes_recibido + p.mora_recibida) AS total_pagado,
+                    "Liquidación de préstamo" AS observacion,
+                    s.id AS socio_id, s.numero AS socio_numero, s.nombre_completo AS socio_nombre,
+                    p.id AS prestamo_id, p.monto AS prestamo_monto
+             FROM prestamos p
+             INNER JOIN socios s ON s.id = p.socio_id
+             WHERE (p.interes_recibido > 0 OR p.mora_recibida > 0)
+               AND NOT EXISTS (SELECT 1 FROM prestamo_pagos pp WHERE pp.prestamo_id = p.id)
+             ORDER BY fecha_pago DESC, p.id DESC'
+        )->fetchAll();
+
+        $interesesDetalle = array_merge($interesesPagos, $interesesLegacy);
+
+        // 2. Detalle de préstamos activos (capital colocado)
+        $capitalCalle = $this->db->query(
+            'SELECT p.id, p.monto, p.saldo_capital, p.tasa_mensual_bp, p.fecha_entrega, p.fecha_vencimiento,
+                    p.interes_recibido, p.mora_recibida,
+                    s.id AS socio_id, s.numero AS socio_numero, s.nombre_completo AS socio_nombre,
+                    CASE
+                        WHEN p.fecha_vencimiento IS NOT NULL AND p.fecha_vencimiento < CURDATE() THEN 1
+                        ELSE 0
+                    END AS en_mora,
+                    CASE
+                        WHEN p.fecha_vencimiento IS NOT NULL AND p.fecha_vencimiento < CURDATE()
+                        THEN DATEDIFF(CURDATE(), p.fecha_vencimiento)
+                        ELSE 0
+                    END AS dias_mora
+             FROM prestamos p
+             INNER JOIN socios s ON s.id = p.socio_id
+             WHERE p.estado = "activo"
+             ORDER BY en_mora DESC, p.fecha_vencimiento ASC'
+        )->fetchAll();
+
+        // 3. Detalle de cuotas obligatorias por reunión
+        $cuotasDetalle = $this->db->query(
+            'SELECT r.id, r.fecha, r.hora, r.concepto, r.valor_cuota,
+                    COUNT(CASE WHEN ll.pago_cuota = 1 THEN 1 END) AS total_socios_pagaron,
+                    COALESCE(SUM(CASE WHEN ll.pago_cuota = 1 THEN r.valor_cuota ELSE 0 END), 0) AS total_recaudado
+             FROM reuniones r
+             LEFT JOIN llamado_lista ll ON ll.reunion_id = r.id
+             GROUP BY r.id, r.fecha, r.hora, r.concepto, r.valor_cuota
+             HAVING total_recaudado > 0
+             ORDER BY r.fecha DESC'
+        )->fetchAll();
+
+        // 4. Detalle de ahorro voluntario acumulado por socio
+        $ahorroDetalle = $this->db->query(
+            'SELECT s.id, s.numero, s.nombre_completo,
+                    COALESCE(SUM(ll.ahorro_voluntario), 0) AS total_ahorrado,
+                    COUNT(CASE WHEN ll.ahorro_voluntario > 0 THEN 1 END) AS quincenas_aportadas
+             FROM socios s
+             LEFT JOIN llamado_lista ll ON ll.socio_id = s.id
+             WHERE s.activo = 1
+             GROUP BY s.id, s.numero, s.nombre_completo
+             HAVING total_ahorrado > 0
+             ORDER BY total_ahorrado DESC, s.numero ASC'
+        )->fetchAll();
+
+        // 5. Detalle de actividades especiales
+        $actividadesDetalle = $this->db->query(
+            'SELECT a.id, a.nombre, a.fecha,
+                    COALESCE((SELECT SUM(valor) FROM actividad_movimientos WHERE actividad_id = a.id AND tipo = "ingreso"), 0) AS ingresos,
+                    COALESCE((SELECT SUM(valor) FROM actividad_movimientos WHERE actividad_id = a.id AND tipo = "gasto"), 0) AS gastos,
+                    (SELECT COUNT(*) FROM actividad_participantes WHERE actividad_id = a.id) AS participantes
+             FROM actividades a
+             ORDER BY a.fecha DESC'
+        )->fetchAll();
+
+        foreach ($actividadesDetalle as &$act) {
+            $act['neto'] = (int) $act['ingresos'] - (int) $act['gastos'];
+        }
+        unset($act);
+
+        return [
+            'intereses' => $interesesDetalle,
+            'capital_calle' => $capitalCalle,
+            'cuotas' => $cuotasDetalle,
+            'ahorro' => $ahorroDetalle,
+            'actividades' => $actividadesDetalle,
+        ];
+    }
+
     public function resumenAnual(int $ano): array
     {
         $desde = sprintf('%04d-01-01', $ano);

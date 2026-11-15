@@ -75,7 +75,6 @@ final class ActividadController extends Controller
         if (
             $nombre === '' || mb_strlen($nombre, 'UTF-8') > 100
             || $fechaValida === false || $fechaValida->format('Y-m-d') !== $fecha
-            || $fecha > date('Y-m-d')
             || !is_array($ids) || $ids === []
         ) {
             $this->flash('danger', 'Escribe un nombre, una fecha válida y marca al menos un participante.');

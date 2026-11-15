@@ -2688,3 +2688,32 @@ img.account-avatar {
         border: 1px solid #d0d0d0 !important;
     }
 }
+
+/* Tarjetas interactivas de balance con efecto botón */
+.balance-card-clickable {
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    user-select: none;
+}
+
+.balance-card-clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    border-color: #1e523f !important;
+}
+
+.balance-card-clickable:active {
+    transform: translateY(0);
+}
+
+.balance-card-hint {
+    font-size: 0.67rem;
+    font-weight: 500;
+    transition: color 0.15s ease;
+}
+
+.balance-card-clickable:hover .balance-card-hint {
+    color: #1e523f !important;
+    text-decoration: underline;
+}

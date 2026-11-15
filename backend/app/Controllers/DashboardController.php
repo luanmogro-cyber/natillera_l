@@ -28,7 +28,12 @@ final class DashboardController extends Controller
 
         $socios = new Socio($this->db);
         $reuniones = new Reunion($this->db);
-        $balance = (new Liquidacion($this->db))->balanceGeneral();
+        $modeloLiquidacion = new Liquidacion($this->db);
+        $balance = $modeloLiquidacion->balanceGeneral();
+        $balanceDetalles = in_array($_SESSION['usuario']['rol'] ?? '', ['Presidente', 'Tesorera'], true)
+            ? $modeloLiquidacion->balanceDetalles()
+            : [];
+
         $this->render('dashboard/index', [
             'pageTitle' => 'Resumen',
             'activePage' => 'panel',
@@ -36,6 +41,7 @@ final class DashboardController extends Controller
             'proximaReunion' => $reuniones->proxima(),
             'reunionesRegistradas' => $reuniones->cantidad(),
             'balance' => $balance,
+            'balanceDetalles' => $balanceDetalles,
         ]);
     }
 

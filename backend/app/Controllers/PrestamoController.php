@@ -40,11 +40,15 @@ final class PrestamoController extends Controller
         }
         unset($p);
 
+        $balanceGeneral = (new \Natillera\App\Models\Liquidacion($this->db))->balanceGeneral();
+        $cajaDisponible = (int) ($balanceGeneral['caja_disponible'] ?? 0);
+
         $this->render('admin/prestamos', [
             'pageTitle' => 'Préstamos',
             'activePage' => 'prestamos',
             'socios' => $socios,
             'prestamos' => $prestamos,
+            'cajaDisponible' => $cajaDisponible,
             'metaInteres' => 400000,
             'ano' => $ano,
             'csrfToken' => $_SESSION['csrf_token'],
@@ -100,6 +104,17 @@ final class PrestamoController extends Controller
                 'danger',
                 'No se puede registrar el préstamo: el monto ($' . number_format($monto, 0, ',', '.')
                 . ') supera el cupo disponible del socio ($' . number_format($disponible, 0, ',', '.') . ').'
+            );
+            $this->redirect('/admin/prestamos');
+        }
+
+        $balanceGeneral = (new \Natillera\App\Models\Liquidacion($this->db))->balanceGeneral();
+        $cajaDisponible = (int) ($balanceGeneral['caja_disponible'] ?? 0);
+        if ($monto > $cajaDisponible) {
+            $this->flash(
+                'danger',
+                'Fondos insuficientes: La natillera dispone de $' . number_format($cajaDisponible, 0, ',', '.')
+                . ' en caja disponible hoy. No es posible prestar un valor superior al disponible.'
             );
             $this->redirect('/admin/prestamos');
         }

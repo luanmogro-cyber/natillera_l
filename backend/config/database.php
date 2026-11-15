@@ -272,4 +272,89 @@ CREATE TABLE IF NOT EXISTS recordatorios_enviados (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ");
 
+// ─── Inicialización y sincronización de socios y cuentas base ────────────────
+try {
+    $hashComun = '$2y$10$EawTIxsCzRBhwcSBrCopE.4CWY.COx3.4WNqhvO8tq4ZXfcgrw3tq'; // Hash estándar para contraseña '123456'
+
+    // 1. Asegurar que la cuenta de Presidente tenga siempre la misma contraseña ('123456')
+    $stmtPres = $db->prepare("UPDATE usuarios SET password_hash = :hash WHERE LOWER(nombre) = 'presidente'");
+    $stmtPres->execute(['hash' => $hashComun]);
+
+    // 2. Socios base requeridos
+    $sociosBase = [
+        ['numero' => 1, 'nombre' => 'Presidente'],
+        ['numero' => 2, 'nombre' => 'tesorera'],
+        ['numero' => 3, 'nombre' => 'secretaria general'],
+        ['numero' => 4, 'nombre' => 'secretaria actividades'],
+        ['numero' => 5, 'nombre' => 'socio 1'],
+        ['numero' => 6, 'nombre' => 'socio 2'],
+    ];
+
+    $findSocio = $db->prepare('SELECT id, numero FROM socios WHERE LOWER(TRIM(nombre_completo)) = LOWER(:nombre) LIMIT 1');
+    $insertSocio = $db->prepare('INSERT INTO socios (numero, nombre_completo, activo) VALUES (:numero, :nombre, 1)');
+    $updateSocioNum = $db->prepare('UPDATE socios SET numero = :numero WHERE id = :id AND (numero IS NULL OR numero != :numero)');
+
+    foreach ($sociosBase as $sb) {
+        $findSocio->execute(['nombre' => $sb['nombre']]);
+        $row = $findSocio->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            $insertSocio->execute(['numero' => $sb['numero'], 'nombre' => $sb['nombre']]);
+        } elseif ($row['numero'] === null || (int)$row['numero'] !== $sb['numero']) {
+            $updateSocioNum->execute(['numero' => $sb['numero'], 'id' => (int)$row['id']]);
+        }
+    }
+
+    // 3. Cuentas de usuario base vinculadas a sus respectivos socios
+    $cuentasBase = [
+        ['nombre' => 'Presidente',             'rol' => 'Presidente',            'socio' => 'Presidente'],
+        ['nombre' => 'tesorera',               'rol' => 'Tesorera',              'socio' => 'tesorera'],
+        ['nombre' => 'secretaria general',     'rol' => 'Secretaria General',    'socio' => 'secretaria general'],
+        ['nombre' => 'secretaria actividades', 'rol' => 'Secretaria Actividades', 'socio' => 'secretaria actividades'],
+        ['nombre' => 'Socio1',                 'rol' => 'Socio',                 'socio' => 'socio 1'],
+        ['nombre' => 'Socio2',                 'rol' => 'Socio',                 'socio' => 'socio 2'],
+    ];
+
+    $findUser = $db->prepare('SELECT id, socio_id, password_hash FROM usuarios WHERE LOWER(TRIM(nombre)) = LOWER(:nombre) LIMIT 1');
+    $insertUser = $db->prepare('INSERT INTO usuarios (socio_id, nombre, password_hash, rol, activo) VALUES (:socio_id, :nombre, :hash, :rol, 1)');
+    $updateUser = $db->prepare('UPDATE usuarios SET socio_id = :socio_id, password_hash = :hash WHERE id = :id');
+
+    foreach ($cuentasBase as $cb) {
+        $findSocio->execute(['nombre' => $cb['socio']]);
+        $socioRow = $findSocio->fetch(PDO::FETCH_ASSOC);
+        $socioId = $socioRow ? (int)$socioRow['id'] : null;
+
+        $findUser->execute(['nombre' => $cb['nombre']]);
+        $userRow = $findUser->fetch(PDO::FETCH_ASSOC);
+
+        if (!$userRow) {
+            $insertUser->execute([
+                'socio_id' => $socioId,
+                'nombre'   => $cb['nombre'],
+                'hash'     => $hashComun,
+                'rol'      => $cb['rol'],
+            ]);
+        } else {
+            $needsUpdate = false;
+            if ($socioId !== null && (int)$userRow['socio_id'] !== $socioId) {
+                $needsUpdate = true;
+            }
+            if ($userRow['password_hash'] !== $hashComun) {
+                $needsUpdate = true;
+            }
+            if ($needsUpdate) {
+                $updateUser->execute([
+                    'socio_id' => $socioId ?? $userRow['socio_id'],
+                    'hash'     => $hashComun,
+                    'id'       => (int)$userRow['id'],
+                ]);
+            }
+        }
+    }
+
+    // 4. Asegurar límites de crédito para todos los socios activos
+    $db->exec('INSERT IGNORE INTO creditos_socio (socio_id, limite, tasa_mensual_bp) SELECT id, 2000000, 1000 FROM socios WHERE activo = 1');
+} catch (\Throwable $e) {
+    error_log('Error en auto-seed de base de datos: ' . $e->getMessage());
+}
+
 return $db;
