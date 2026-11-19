@@ -46,7 +46,8 @@ $tabQuery = !empty($currentTabId) ? '?_tab=' . rawurlencode((string) $currentTab
 ?>
 <?php if (is_array($currentUser ?? null)): ?>
     <?php $rolActual = $currentUser['rol'] ?? ''; ?>
-    <?php $vistaPersonalPresidente = $rolActual === 'Presidente' && ($_SESSION['vista_presidencial'] ?? false); ?>
+    <?php $esSocioDirectivo = is_int($currentUser['socio_id'] ?? null); ?>
+    <?php $vistaPersonalActiva = $rolActual === 'Socio' || ($esSocioDirectivo && ($_SESSION['vista_presidencial'] ?? false)); ?>
     <?php
     // Mensajes contextuales por módulo
     $moduleMsgs = [
@@ -66,27 +67,16 @@ $tabQuery = !empty($currentTabId) ? '?_tab=' . rawurlencode((string) $currentTab
     ?>
     <div class="app-shell">
         <aside class="app-sidebar" aria-label="Navegación principal">
-            <a class="brand-lockup" href="/panel<?= $tabQuery ?>">
+            <a class="brand-lockup" href="<?= ($vistaPersonalActiva ? '/socio' : '/panel') . $tabQuery ?>">
                 <span class="brand-mark"><img src="/img/logo.png" alt="La Semilla"></span>
                 <span><strong>La Semilla</strong><small>Natillera comunitaria</small></span>
             </a>
             <p class="sidebar-caption">TU ESPACIO</p>
             <nav class="sidebar-nav">
-                <?php if ($rolActual === 'Socio'): ?>
-                    <a class="nav-link<?= ($activePage ?? '') === 'socio' ? ' active' : '' ?>" href="/socio<?= $tabQuery ?>">
-                        <span class="nav-icon" aria-hidden="true">🌱</span> Mi ahorro
-                    </a>
-                <?php else: ?>
-                    <a class="nav-link<?= ($activePage ?? '') === 'panel' ? ' active' : '' ?>" href="/panel<?= $tabQuery ?>">
-                        <span class="nav-icon" aria-hidden="true">⌂</span> Resumen
-                    </a>
-                    <?php if (is_int($currentUser['socio_id'] ?? null)): ?>
-                        <a class="nav-link<?= ($activePage ?? '') === 'socio' ? ' active' : '' ?>" href="/socio<?= $tabQuery ?>">
-                            <span class="nav-icon" aria-hidden="true">🌱</span> Mi ahorro personal
-                        </a>
-                    <?php endif; ?>
-                <?php endif; ?>
-                <?php if (in_array($rolActual, ['Presidente', 'Tesorera'], true)): ?>
+                <a class="nav-link<?= in_array(($activePage ?? ''), ['panel', 'socio'], true) ? ' active' : '' ?>" href="<?= ($vistaPersonalActiva ? '/socio' : '/panel') . $tabQuery ?>">
+                    <span class="nav-icon" aria-hidden="true">⌂</span> <?= $vistaPersonalActiva ? 'Mi ahorro' : 'Resumen' ?>
+                </a>
+                <?php if (!$vistaPersonalActiva && in_array($rolActual, ['Presidente', 'Tesorera'], true)): ?>
                     <a class="nav-link<?= ($activePage ?? '') === 'llamado' ? ' active' : '' ?>" href="/admin/llamado-lista<?= $tabQuery ?>">
                         <span class="nav-icon" aria-hidden="true">✓</span> Llamado a lista
                     </a>
@@ -97,12 +87,12 @@ $tabQuery = !empty($currentTabId) ? '?_tab=' . rawurlencode((string) $currentTab
                         <span class="nav-icon" aria-hidden="true">◷</span> Liquidación
                     </a>
                 <?php endif; ?>
-                <?php if (in_array($rolActual, ['Presidente', 'Secretaria Actividades'], true)): ?>
+                <?php if (!$vistaPersonalActiva && in_array($rolActual, ['Presidente', 'Secretaria Actividades'], true)): ?>
                     <a class="nav-link<?= ($activePage ?? '') === 'actividades' ? ' active' : '' ?>" href="/admin/actividades<?= $tabQuery ?>">
                         <span class="nav-icon" aria-hidden="true">✳</span> Actividades
                     </a>
                 <?php endif; ?>
-                <?php if ($rolActual === 'Presidente'): ?>
+                <?php if ($rolActual === 'Presidente' && !$vistaPersonalActiva): ?>
                     <a class="nav-link<?= ($activePage ?? '') === 'socios' ? ' active' : '' ?>" href="/admin/socios<?= $tabQuery ?>">
                         <span class="nav-icon" aria-hidden="true">♧</span> Socios
                     </a>
@@ -110,7 +100,7 @@ $tabQuery = !empty($currentTabId) ? '?_tab=' . rawurlencode((string) $currentTab
                         <span class="nav-icon" aria-hidden="true">◎</span> Equipo
                     </a>
                 <?php endif; ?>
-                <?php if (in_array($rolActual, ['Presidente', 'Secretaria General'], true)): ?>
+                <?php if (!$vistaPersonalActiva && in_array($rolActual, ['Presidente', 'Secretaria General'], true)): ?>
                     <a class="nav-link<?= ($activePage ?? '') === 'reuniones' ? ' active' : '' ?>" href="/admin/reuniones<?= $tabQuery ?>">
                         <span class="nav-icon" aria-hidden="true">▦</span> Reuniones
                     </a>
@@ -130,18 +120,17 @@ $tabQuery = !empty($currentTabId) ? '?_tab=' . rawurlencode((string) $currentTab
         <div class="app-workspace">
             <header class="topbar">
                 <div class="topbar-left">
-                    <span class="topbar-context"><?= ($activePage ?? '') === 'socio' ? 'Mi cuenta de socia/o' : 'Natillera comunitaria' ?></span>
+                    <span class="topbar-context"><?= $vistaPersonalActiva ? 'Mi cuenta de socio' : 'Natillera comunitaria' ?></span>
                     <?php if ($currentMsg): ?>
                         <span class="module-tip"><?= htmlspecialchars($currentMsg, ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
                 </div>
                 <div class="topbar-account">
-                    <?php if (is_int($currentUser['socio_id'] ?? null) && $rolActual !== 'Socio'): ?>
-                        <?php if (($activePage ?? '') === 'socio'): ?>
-                            <a class="btn-view-toggle text-decoration-none d-inline-flex align-items-center justify-content-center" href="/panel<?= $tabQuery ?>">👔 Volver a gestión</a>
-                        <?php else: ?>
-                            <a class="btn-view-toggle text-decoration-none d-inline-flex align-items-center justify-content-center" href="/socio<?= $tabQuery ?>">🌱 Mi cuenta personal</a>
-                        <?php endif; ?>
+                    <?php if ($rolActual !== 'Socio' && $esSocioDirectivo): ?>
+                        <form method="post" action="/presidente/vista<?= $tabQuery ?>" class="view-toggle-form">
+                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                            <button class="btn-view-toggle" type="submit"><?= $vistaPersonalActiva ? 'Volver a administración' : 'Mi cuenta de socio' ?></button>
+                        </form>
                     <?php endif; ?>
                     <?php if (($vapidPublicKey ?? '') !== ''): ?>
                         <button class="push-toggle" type="button"

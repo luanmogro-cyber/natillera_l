@@ -9,9 +9,12 @@
                     <span class="badge bg-light text-dark border px-2 py-1">
                         Socio #<?= (int) ($currentUser['socio_id'] ?? 0) ?> · Cargo: <?= htmlspecialchars((string) $currentUser['rol'], ENT_QUOTES, 'UTF-8') ?>
                     </span>
-                    <a href="/panel" class="btn btn-sm btn-outline-light text-decoration-none">
-                        👔 Volver al panel de <?= htmlspecialchars((string) $currentUser['rol'], ENT_QUOTES, 'UTF-8') ?> →
-                    </a>
+                    <form method="post" action="/presidente/vista<?= $tabQuery ?>" class="d-inline">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-light">
+                            👔 Volver a administración →
+                        </button>
+                    </form>
                 </div>
             <?php endif; ?>
         </div>
