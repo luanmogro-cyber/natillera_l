@@ -14,6 +14,58 @@
         <img src="/img/semilla.svg" alt="" class="welcome-illustration">
     </header>
 
+    <?php if (is_int($currentUser['socio_id'] ?? null) && !empty($resumenPersonal)): ?>
+        <!-- Resumen personal del directivo como socio de la natillera -->
+        <section class="card border-success shadow-sm mb-4" style="background: linear-gradient(135deg, rgba(240, 253, 244, 0.95), rgba(254, 249, 195, 0.4));">
+            <div class="card-body p-3 p-md-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 pb-2 border-bottom border-success-subtle">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-3">🌱</span>
+                        <div>
+                            <h2 class="h5 mb-0 fw-bold text-success-emphasis">Tu cuenta personal de socia/o (#<?= (int) $currentUser['socio_id'] ?>)</h2>
+                            <small class="text-muted">Como integrante del equipo directivo (<?= htmlspecialchars((string) $rolActual, ENT_QUOTES, 'UTF-8') ?>), también participas, ahorras y tienes historial propio.</small>
+                        </div>
+                    </div>
+                    <a href="/socio" class="btn btn-sm btn-success fw-semibold shadow-sm">
+                        Ver todo mi detalle de socia/o (Préstamos, Asistencia, Actividades) →
+                    </a>
+                </div>
+                <div class="row g-2 text-center">
+                    <div class="col-6 col-md-3">
+                        <div class="bg-white p-2 rounded border shadow-xs">
+                            <span class="text-muted small d-block">Total Ahorrado</span>
+                            <strong class="fs-5 text-success">$<?= number_format((int) ($resumenPersonal['total_ahorrado'] ?? 0), 0, ',', '.') ?></strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-white p-2 rounded border shadow-xs">
+                            <span class="text-muted small d-block">Cuotas Pagadas</span>
+                            <strong class="fs-5 text-dark">$<?= number_format((int) ($resumenPersonal['cuotas'] ?? 0), 0, ',', '.') ?></strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-white p-2 rounded border shadow-xs">
+                            <span class="text-muted small d-block">Ahorro Voluntario</span>
+                            <strong class="fs-5 text-warning-emphasis">$<?= number_format((int) ($resumenPersonal['ahorro_voluntario'] ?? 0), 0, ',', '.') ?></strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-white p-2 rounded border shadow-xs">
+                            <span class="text-muted small d-block">Asistencia a Reuniones</span>
+                            <strong class="fs-5 text-primary"><?= (int) ($resumenPersonal['reuniones_asistidas'] ?? 0) ?> / <?= (int) ($resumenPersonal['total_reuniones'] ?? 0) ?> (<?= (int) ($resumenPersonal['porcentaje_asistencia'] ?? 0) ?>%)</strong>
+                        </div>
+                    </div>
+                </div>
+                <?php if ((int) ($resumenPersonal['saldo_prestamos_activo'] ?? 0) > 0): ?>
+                    <div class="alert alert-warning py-1 px-3 mt-3 mb-0 small d-flex justify-content-between align-items-center">
+                        <span>⚠️ Tienes un préstamo activo a tu nombre con un saldo pendiente de <strong>$<?= number_format((int) $resumenPersonal['saldo_prestamos_activo'], 0, ',', '.') ?></strong></span>
+                        <a href="/socio" class="btn btn-sm btn-outline-dark py-0">Ver detalle →</a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </section>
+    <?php endif; ?>
+
     <!-- Alertas operativas prioritarias -->
     <?php if ($rolActual === 'Presidente' && (int) ($balance['prestamos_pendientes'] ?? 0) > 0): ?>
         <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" role="alert">

@@ -15,13 +15,6 @@ final class DashboardController extends Controller
         if (!isset($_SESSION['usuario'])) {
             $this->redirect('/login');
         }
-        if (
-            ($_SESSION['usuario']['rol'] ?? null) === 'Presidente'
-            && ($_SESSION['vista_presidencial'] ?? false)
-            && is_int($_SESSION['usuario']['socio_id'] ?? null)
-        ) {
-            $this->redirect('/socio');
-        }
         if (($_SESSION['usuario']['rol'] ?? null) === 'Socio') {
             $this->redirect('/socio');
         }
@@ -34,6 +27,11 @@ final class DashboardController extends Controller
             ? $modeloLiquidacion->balanceDetalles()
             : [];
 
+        $resumenPersonal = null;
+        if (is_int($_SESSION['usuario']['socio_id'] ?? null)) {
+            $resumenPersonal = $socios->resumenPersonal((int) $_SESSION['usuario']['socio_id']);
+        }
+
         $this->render('dashboard/index', [
             'pageTitle' => 'Resumen',
             'activePage' => 'panel',
@@ -42,6 +40,7 @@ final class DashboardController extends Controller
             'reunionesRegistradas' => $reuniones->cantidad(),
             'balance' => $balance,
             'balanceDetalles' => $balanceDetalles,
+            'resumenPersonal' => $resumenPersonal,
         ]);
     }
 
