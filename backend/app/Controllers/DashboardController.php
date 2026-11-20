@@ -19,7 +19,8 @@ final class DashboardController extends Controller
             $this->redirect('/socio');
         }
         if (
-            ($_SESSION['vista_presidencial'] ?? false)
+            ($_SESSION['usuario']['rol'] ?? null) === 'Presidente'
+            && ($_SESSION['vista_presidencial'] ?? false)
             && is_int($_SESSION['usuario']['socio_id'] ?? null)
         ) {
             $this->redirect('/socio');
@@ -57,7 +58,9 @@ final class DashboardController extends Controller
         }
 
         $this->render('socio/dashboard', [
-            'pageTitle' => 'Mi resumen y ahorro',
+            'pageTitle' => in_array($usuario['rol'] ?? '', ['Tesorera', 'Secretaria General', 'Secretaria Actividades'], true)
+                ? 'Mis movimientos'
+                : 'Mi resumen y ahorro',
             'activePage' => 'socio',
             'resumen' => (new Socio($this->db))->resumenPersonal((int) $usuario['socio_id']),
         ]);

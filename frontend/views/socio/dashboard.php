@@ -1,13 +1,13 @@
 <main class="content-page">
     <header class="welcome-banner member-welcome">
         <div class="welcome-copy">
-            <p class="eyebrow">TU HISTORIA EN LA NATILLERA</p>
+            <p class="eyebrow"><?= in_array(($currentUser['rol'] ?? ''), ['Tesorera', 'Secretaria General', 'Secretaria Actividades'], true) ? 'MIS MOVIMIENTOS' : 'TU HISTORIA EN LA NATILLERA' ?></p>
             <h1>Hola, <?= htmlspecialchars((string) $currentUser['nombre'], ENT_QUOTES, 'UTF-8') ?></h1>
             <p>Consulta aquí tu resumen oficial: tus ahorros, tus aportes, reuniones asistidas y el estado de tus préstamos.</p>
-            <?php if (($currentUser['rol'] ?? '') !== 'Socio'): ?>
+            <?php if (($currentUser['rol'] ?? '') === 'Presidente'): ?>
                 <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
                     <span class="badge bg-light text-dark border px-2 py-1">
-                        Socio #<?= (int) ($currentUser['socio_id'] ?? 0) ?> · Cargo: <?= htmlspecialchars((string) $currentUser['rol'], ENT_QUOTES, 'UTF-8') ?>
+                        Socio #<?= (int) ($currentUser['socio_id'] ?? 0) ?> · Cargo: Presidente
                     </span>
                     <form method="post" action="/presidente/vista<?= $tabQuery ?>" class="d-inline">
                         <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">

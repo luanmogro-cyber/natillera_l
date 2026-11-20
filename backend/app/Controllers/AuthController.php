@@ -166,8 +166,7 @@ final class AuthController extends Controller
 
     public function cambiarVistaPresidencia(): void
     {
-        if (!isset($_SESSION['usuario'])) {
-            $this->redirect('/login');
+        if (!$this->requireRoles(['Presidente'])) {
             return;
         }
         if (!$this->verifyCsrf($_POST['_csrf'] ?? null)) {
@@ -176,7 +175,7 @@ final class AuthController extends Controller
             return;
         }
         if (!is_int($_SESSION['usuario']['socio_id'] ?? null)) {
-            $this->flash('warning', 'Esta cuenta todavía no está vinculada a un socio.');
+            $this->flash('warning', 'La cuenta de Presidencia todavía no está vinculada a un socio.');
             $this->redirect('/panel');
             return;
         }
